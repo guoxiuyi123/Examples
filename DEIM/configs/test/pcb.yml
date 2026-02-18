@@ -1,0 +1,60 @@
+task: detection
+
+evaluator:
+  type: CocoEvaluator
+  iou_types: ['bbox', ]
+
+num_classes: 10 # your dataset classes
+remap_mscoco_category: False
+
+train_dataloader:
+  type: DataLoader
+  dataset:
+    type: CocoDetection
+    img_folder: /root/dataset/dataset_pcb/images/train
+    ann_file: /root/dataset/dataset_pcb/annotations/train.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  shuffle: True
+  num_workers: 4
+  drop_last: True
+  pin_memory: True
+  collate_fn:
+    type: BatchImageCollateFunction
+
+
+val_dataloader:
+  type: DataLoader
+  dataset:
+    type: CocoDetection
+    img_folder: /root/dataset/dataset_pcb/images/val
+    ann_file: /root/dataset/dataset_pcb/annotations/val.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  shuffle: False
+  num_workers: 4
+  drop_last: False
+  pin_memory: True
+  collate_fn:
+    type: BatchImageCollateFunction
+
+# val_dataloader:
+#   type: DataLoader
+#   dataset:
+#     type: CocoDetection
+#     img_folder: /root/dataset/dataset_pcb/images/test
+#     ann_file: /root/dataset/dataset_pcb/annotations/test.json
+#     return_masks: False
+#     transforms:
+#       type: Compose
+#       ops: ~
+#   shuffle: False
+#   num_workers: 4
+#   drop_last: False
+#   pin_memory: True
+#   collate_fn:
+#     type: BatchImageCollateFunction

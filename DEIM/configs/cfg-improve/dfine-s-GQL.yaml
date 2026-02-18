@@ -1,0 +1,40 @@
+backbone:
+  # [from, module, args]
+  - [-1, nn.Identity, []] # 0-P0/1
+  - [-1, GQL_Weight, [3, 4]] # 1
+  - [0, StemBlock, [16, 16, True]] # 2-P2/4
+  - [[-1, 1], MSBlock_GQL, [32, [1, 3, 3], 1, 2, 1, [3, 4]]] # 3-P2/4
+  - [-1, Conv, [64, 3, 2]] # 4-P3/8
+  - [[-1, 1], MSBlock_GQL, [64, [1, 5, 5], 1, 2, 1, [3, 4]]] # 5-P3/8
+  - [-1, Conv, [128, 3, 2]] # 6-P4/16
+  - [[-1, 1], MSBlock_GQL, [256, [1, 7, 7], 1, 2, 1, [3, 4]]] # 7-P4/16
+  - [-1, Conv, [512, 3, 2]] # 8-P5/32
+  - [[-1, 1], MSBlock_GQL, [512, [1, 9, 9], 1, 2, 1, [3, 4]]] # 9-P5/32
+
+encoder:
+  - [5, ConvNormLayer_fuse, [256, 1, 1]] # 10-P3/8
+  - [7, ConvNormLayer_fuse, [256, 1, 1]] # 11-P4/16
+  - [9, ConvNormLayer_fuse, [256, 1, 1]] # 12-P5/32
+
+  - [-1, TransformerEncoderBlock, [8, 1024, 0.1, "relu", 10000, False]] # 13-P5/32
+
+  - [-1, ConvNormLayer_fuse, [256, 1, 1]] # 14
+  - [-1, nn.Upsample, [None, 2, "nearest"]] # 15
+  - [[-1, 11], Concat, []] # 16-P4/16
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 17-P4/16
+
+  - [-1, ConvNormLayer_fuse, [256, 1, 1]] # 18
+  - [-1, nn.Upsample, [None, 2, "nearest"]] # 19
+  - [[-1, 10], Concat, []] # 20-P3/8
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 21-P3/8
+
+  - [-1, SCDown, [256, 3, 2, 'silu']] # 22-P4/16
+  - [[-1, 18], Concat, []] # 23-P4/16
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 24-P4/16
+
+  - [-1, SCDown, [256, 3, 2, 'silu']] # 25-P5/32
+  - [[-1, 14], Concat, []] # 26-P5/32
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 27-P5/32
+
+decoder:
+  - [[21, 24, 27], DFINETransformer, {"feat_strides":[8, 16, 32], "hidden_dim": 256, "num_levels": 3, "num_layers": 3, "num_points": [3, 6, 3], "dim_feedforward": 1024}]

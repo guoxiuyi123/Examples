@@ -1,0 +1,78 @@
+__include__: [
+  'visdrone2019.yml',
+  '../runtime.yml',
+  '../base/dataloader_dfine.yml',
+  '../base/optimizer.yml',
+  '../base/dfine_hgnetv2.yml',
+]
+
+print_freq: 1600
+output_dir: ./outputs/deim_dinov3_visdrone
+
+yolo_metrice: True
+
+DEIM:
+  backbone: ConvNeXt
+  encoder: SimpleEncoder
+
+ConvNeXt:
+  in_chans: 3
+  depths: [3, 3, 9, 3]
+  dims: [96, 192, 384, 768]
+  pretrained: dinov3_convnext_tiny_pretrain_lvd1689m-21b726bb.pth
+  return_idx: [1, 2, 3]
+
+SimpleEncoder:
+  in_channels: [192, 384, 768]
+  feat_strides: [8, 16, 32]
+
+DFINETransformer:
+  feat_channels: [192, 384, 768]
+
+optimizer:
+  type: AdamW
+  params: 
+    - 
+      params: '^(?=.*(?:norm|bn)).*$'     # except bias
+      weight_decay: 0.
+
+  lr: 0.0002
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+
+# Increase to search for the optimal ema
+epoches: 132 # 120 + 4n
+
+## Our LR-Scheduler
+flat_epoch: 64    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+no_aug_epoch: 12
+
+## Our DataAug
+train_dataloader: 
+  dataset: 
+    transforms:
+      ops:
+        - {type: RandomPhotometricDistort, p: 0.5}
+        - {type: RandomZoomOut, fill: 0}
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [640, 640], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: ConvertPILImage, dtype: 'float32', scale: True, dinov3_norm: True}   
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 64, 120]   # list 
+
+  collate_fn:
+    mixup_epochs: [4, 64]
+    stop_epoch: 120
+  total_batch_size: 8
+val_dataloader:
+  dataset:
+    transforms:
+      ops:
+        - {type: Resize, size: [640, 640], }
+        - {type: ConvertPILImage, dtype: 'float32', scale: True, dinov3_norm: True}
+  total_batch_size: 8

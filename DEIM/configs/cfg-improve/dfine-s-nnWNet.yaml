@@ -1,0 +1,43 @@
+backbone:
+  # [from, module, args]
+  - [-1, OPE, [16]] # 0-P1/2
+  - [-1, OPE, [32]] # 1-P2/4
+  - [-1, OPE, [128]] # 2-P3/8
+  - [-1, OPE, [256]] # 3-P4/16
+  - [-1, OPE, [512]] # 4-P5/32
+
+encoder:
+  - [-1, LocalBlock, [128, 'up']] # 5-P4/16
+  - [3, GlobalBlock, [128]] # 6-P4/16
+  - [[-1, -2], Concat, []] # 7-P4/16
+
+  - [-1, LocalBlock, [64, 'up']] # 8-P3/8
+  - [2, GlobalBlock, [64]] # 9-P3/8
+  - [[-1, -2], Concat, []] # 10-P3/8
+
+  - [-1, LocalBlock, [64, 'up']] # 11-P2/4
+  - [1, GlobalBlock, [64]] # 12-P2/4
+  - [[-1, -2], Concat, []] # 13-P2/4
+
+  - [-1, LocalBlock, [64, 'down']] # 14-P3/8
+  - [10, GlobalBlock, [64]] # 15-P3/8
+  - [[-1, -2], Concat, []] # 16-P3/8
+
+  - [-1, LocalBlock, [128, 'down']] # 17-P4/16
+  - [7, GlobalBlock, [128]] # 18-P4/16
+  - [[-1, -2], Concat, []] # 19-P4/16
+
+  - [-1, LocalBlock, [512, 'down']] # 20-P5/32
+  - [4, GlobalBlock, [512]] # 21-P5/32
+  - [[-1, -2], Concat, []] # 22-P5/32
+
+  - [-1, LocalBlock, [128, 'up']] # 23-P4/16
+  - [19, GlobalBlock, [128]] # 24-P4/16
+  - [[-1, -2], Concat, []] # 25-P4/16
+
+  - [-1, LocalBlock, [64, 'up']] # 26-P3/8
+  - [16, GlobalBlock, [64]] # 27-P3/8
+  - [[-1, -2], Concat, []] # 28-P3/8
+
+decoder:
+  - [[28, 25, 22], DFINETransformer, {"feat_strides":[8, 16, 32], "hidden_dim": 256, "num_levels": 3, "num_layers": 3, "num_points": [3, 6, 3], "dim_feedforward": 1024}]

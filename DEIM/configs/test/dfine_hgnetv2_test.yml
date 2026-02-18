@@ -1,0 +1,85 @@
+__include__: [
+  'visdrone2019.yml',
+  '../runtime.yml',
+  '../base/dataloader_dfine.yml',
+  '../base/optimizer.yml',
+  '../base/dfine_hgnetv2.yml',
+]
+
+print_freq: 2000
+output_dir: ./outputs/dfine-s-test
+
+model: DEIM_MG
+
+DEIM_MG:
+  # yaml_path: configs/cfg/dfine-s.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-attention.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-psconv.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-IDWB.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-RepHMS.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-hyper.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-C2f-IDWB.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-metaformer.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-hyperACE.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-hyperACE.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-MFM.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-MPCA.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-FDPN.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-FDPN.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-goldyolo.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-goldyolo-improve.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-goldyolo.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-metaformer-assa.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-p2.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-FBRT.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-HS-FPN.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-MANet.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-nnWNet.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-MANet-LWGA.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-C2f-ESMoE.yaml
+  yaml_path: configs/cfg-improve/dfine-s-GQL.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-hgnetv2-msblock.yaml
+
+  # pretrained: weight/hgnetv2/PPHGNetV2_B0_stage1_MG.pth
+
+optimizer:
+  type: AdamW
+  params: 
+    - 
+      params: '^(?=.*backbone)(?!.*(bn|norm)).*$'
+      lr: 0.0001
+    - 
+      params: '^(?=.*(?:norm|bn)).*$'     # except bias
+      weight_decay: 0.
+
+  lr: 0.0001
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+
+# Increase to search for the optimal ema
+epoches: 132 # 120 + 4n
+
+## Our LR-Scheduler
+flat_epoch: 64    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+no_aug_epoch: 12
+
+## Our DataAug
+train_dataloader: 
+  dataset: 
+    transforms:
+      policy:
+        epoch: [4, 64, 120]   # list 
+
+  collate_fn:
+    mixup_epochs: [4, 64]
+    stop_epoch: 120
+  total_batch_size: 4
+val_dataloader:
+  total_batch_size: 4
+
+DEIMCriterion:
+  weight_dict: {loss_vfl: 1, loss_bbox: 5, loss_giou: 2, loss_fgl: 0.15, loss_ddf: 1.5}
+  losses: ['vfl', 'boxes', 'local']
+  # weight_dict: {loss_vfl: 1, loss_bbox: 5, loss_giou: 2, loss_fgl: 0.15, loss_ddf: 1.5, loss_moe: 0.5}
+  # losses: ['vfl', 'boxes', 'local', 'moe']

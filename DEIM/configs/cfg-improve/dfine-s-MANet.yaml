@@ -1,0 +1,39 @@
+backbone:
+  # [from, module, args]
+  - [-1, ConvNormLayer_fuse, [16, 3, 2]] # 0-P1/2
+  - [-1, ConvNormLayer_fuse, [32, 3, 2]] # 1-P2/4
+  - [-1, MANet, [64, {'module':InceptionDWBlock, 'param':{'mlp_ratio': 4.0}}, 1]] # 2-P2/4
+  - [-1, ConvNormLayer_fuse, [64, 3, 2]] # 3-P3/8
+  - [-1, MANet, [128, {'module':InceptionDWBlock, 'param':{'mlp_ratio': 4.0}}, 2]] # 4-P3/8
+  - [-1, ConvNormLayer_fuse, [256, 3, 2]] # 5-P4/16
+  - [-1, MANet, [256, {'module':InceptionDWBlock, 'param':{'mlp_ratio': 4.0}}, 2]] # 6-P4/16
+  - [-1, ConvNormLayer_fuse, [512, 3, 2]] # 7-P5/32
+  - [-1, MANet, [512, {'module':InceptionDWBlock, 'param':{'mlp_ratio': 4.0}}, 2]] # 8-P5/32
+
+encoder:
+  - [4, ConvNormLayer_fuse, [256, 1, 1]] # 9-P3/8
+  - [6, ConvNormLayer_fuse, [256, 1, 1]] # 10-P4/16
+  - [8, ConvNormLayer_fuse, [256, 1, 1]] # 11-P5/32
+
+  - [-1, TransformerEncoderBlock, [8, 1024, 0.1, "relu", 10000, False]] # 12-P5/32
+
+  - [-1, ConvNormLayer_fuse, [256, 1, 1]]
+  - [-1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 10], Concat, []] # 15-P4/16
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 16-P4/16
+
+  - [-1, ConvNormLayer_fuse, [256, 1, 1]]
+  - [-1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 9], Concat, []] # 19-P3/8
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 20-P3/8
+
+  - [-1, SCDown, [256, 3, 2, 'silu']]
+  - [[-1, 17], Concat, []]
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 23-P4/16
+
+  - [-1, SCDown, [256, 3, 2, 'silu']]
+  - [[-1, 13], Concat, []]
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 26-P5/32
+
+decoder:
+  - [[20, 23, 26], DFINETransformer, {"feat_strides":[8, 16, 32], "hidden_dim": 256, "num_levels": 3, "num_layers": 3, "num_points": [3, 6, 3], "dim_feedforward": 1024}]

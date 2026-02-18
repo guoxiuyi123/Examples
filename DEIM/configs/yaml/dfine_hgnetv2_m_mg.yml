@@ -1,0 +1,45 @@
+__include__: [
+  '../dataset/custom_detection.yml',
+  '../runtime.yml',
+  '../base/dataloader_dfine.yml',
+  '../base/optimizer.yml',
+  '../base/dfine_hgnetv2.yml',
+]
+
+output_dir: ./outputs/dfine_hgnetv2_m_custom
+
+model: DEIM_MG
+
+DEIM_MG:
+  yaml_path: configs/cfg/dfine-m.yaml
+
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*norm|bn).*$'
+      lr: 0.00002
+    -
+      params: '^(?=.*backbone)(?=.*norm|bn).*$'
+      lr: 0.00002
+      weight_decay: 0.
+    -
+      params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn|bias)).*$'
+      weight_decay: 0.
+
+  lr: 0.0002
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+
+# Increase to search for the optimal ema
+epoches: 132 # 120 + 4n
+train_dataloader:
+  dataset:
+    transforms:
+      policy:
+        epoch: 120
+  collate_fn:
+    stop_epoch: 120
+    ema_restart_decay: 0.9999
+    base_size_repeat: 6

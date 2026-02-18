@@ -1,0 +1,24 @@
+prune_model: False
+kd_loss_type: logical # 'logical', 'feature', 'all'
+kd_loss_decay: constant # 'cosine', 'linear', 'cosine_epoch', 'linear_epoch', 'constant'
+kd_loss_epoch: 1.0 # 0.0~1.0
+
+# logical distillation settings
+logical_loss_type: mutil # 'single', 'mutil'
+logical_loss_ratio: 1.0
+
+# feature distillation settings
+# teacher_kd_layers: ['model.encoder[14]', 'model.encoder[17]'] # Ultralytics的配置文件方式
+teacher_kd_layers: ['encoder.fpn_blocks.0.cv4.act', 'encoder.pan_blocks.0.cv4.act']
+# student_kd_layers: ['backbone.stem.stem1.conv', 'encoder.fpn_blocks.0.cv3.1']
+student_kd_layers: ['encoder.fpn_blocks.0.cv4.act', 'encoder.pan_blocks.0.cv4.act']
+feature_loss_type: cwd # 'mimic', 'mgd', 'cwd', 'chsim', 'sp'
+feature_loss_ratio: 1.0
+
+
+# 特征蒸馏：
+# 1. mimic 论文：https://openaccess.thecvf.com/content_cvpr_2017/papers/Li_Mimicking_Very_Efficient_CVPR_2017_paper.pdf
+# 2. mgd(ECCV2022) 论文：https://link.zhihu.com/?target=https%3A//arxiv.org/pdf/2205.01529.pdf
+# 3. cwd(ICCV2021) 论文：https://arxiv.org/pdf/2011.13256.pdf
+# 4. chsim(ICCV2021) 论文：https://openaccess.thecvf.com/content/ICCV2021/html/Liu_Exploring_Inter-Channel_Correlation_for_Diversity-Preserved_Knowledge_Distillation_ICCV_2021_paper.html
+# 5. sp(ICCV2019) 论文：https://arxiv.org/pdf/1907.09682.pdf

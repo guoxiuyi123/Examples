@@ -1,0 +1,50 @@
+backbone:
+  # [from, module, args]
+  - [-1, StemBlock, [16, 16, True]] # 0-P2/4
+  - [-1, HG_Stage, [16, 64, 1, 3, False, False, 3, True, 'se']] # 1-P2/4
+  - [-1, HG_Stage, [32, 256, 1, 3, True, False, 3, True, 'se']] # 2-P3/8
+  - [-1, HG_Stage, [64, 512, 2, 3, True, True, 5, True, 'se']]  # 3-P4/16
+  - [-1, HG_Stage, [128, 1024, 1, 3, True, True, 5, True, 'se']] # 4-P5/32
+
+encoder:
+  - [2, ConvNormLayer_fuse, [256, 1, 1]] # 5-P3/8
+  - [3, ConvNormLayer_fuse, [256, 1, 1]] # 6-P4/16
+  - [4, ConvNormLayer_fuse, [256, 1, 1]] # 7-P5/32
+
+  - [-1, TransformerEncoderBlock, [8, 1024, 0.1, "relu", 10000, False]] # 8-P5/32
+
+  # Semantic Collecting
+  - [1, nn.AvgPool2d, [4, 4, 0]] # 9
+  - [5, nn.AvgPool2d, [2, 2, 0]] # 10
+  - [8, nn.Upsample, [None, 2, 'nearest']] # 11
+  - [[9, 10, 6, 11], Concat, [1]]  # cat 12
+
+  # Hypergraph Computation
+  - [-1, ConvNormLayer_fuse, [256, 1, 1]] # 13
+  - [-1, HyperComputeModule, [256]] # 14
+  - [-1, MANet, [256, {'module': Bottleneck, 'param':{'shortcut': False, 'k': '((3, 3), (3, 3))', 'e': 1.0, 'g': 1}}, 1]] # 15
+
+  # Semantic Collecting
+  - [-1, nn.AvgPool2d, [2, 2, 0]] # 16
+  - [[-1, 8], Concat, [1]]  # cat 17
+
+  - [-1, ConvNormLayer_fuse, [256, 1, 1]] # 18
+  - [-1, nn.Upsample, [None, 2, "nearest"]] # 19
+  - [[-1, 6], Concat, []] # 20-P4/16
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 21-P4/16
+
+  - [-1, ConvNormLayer_fuse, [256, 1, 1]] # 22
+  - [-1, nn.Upsample, [None, 2, "nearest"]] # 23
+  - [[-1, 5], Concat, []] # 24-P3/8
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 25-P3/8
+
+  - [-1, SCDown, [256, 3, 2, 'silu']] # 26-P4/16
+  - [[-1, 22], Concat, []] # 27-P4/16
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 28-P4/16
+
+  - [-1, SCDown, [256, 3, 2, 'silu']] # 29-P5/32
+  - [[-1, 18], Concat, []] # 30-P5/32
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 31-P5/32
+
+decoder:
+  - [[25, 28, 31], DFINETransformer, {"feat_strides":[8, 16, 32], "hidden_dim": 256, "num_levels": 3, "num_layers": 3, "num_points": [3, 6, 3], "dim_feedforward": 1024}]

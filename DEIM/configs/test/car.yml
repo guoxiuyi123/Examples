@@ -1,0 +1,45 @@
+# https://pan.baidu.com/s/1fqFUNErDxQN7rFuWaoqH2g?pwd=y1hu
+
+task: detection
+
+evaluator:
+  type: CocoEvaluator
+  iou_types: ['bbox']
+
+num_classes: 1 # your dataset classes
+remap_mscoco_category: False
+
+train_dataloader:
+  type: DataLoader
+  dataset:
+    type: CocoDetection
+    img_folder: /root/code/project/dataset_seg/train
+    ann_file: /root/code/project/dataset_seg/train/_annotations.coco.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  shuffle: True
+  num_workers: 4
+  drop_last: True
+  pin_memory: True
+  collate_fn:
+    type: BatchImageCollateFunction
+
+
+val_dataloader:
+  type: DataLoader
+  dataset:
+    type: CocoDetection
+    img_folder: /root/code/project/dataset_seg/valid
+    ann_file: /root/code/project/dataset_seg/valid/_annotations.coco.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  shuffle: False
+  num_workers: 4
+  drop_last: False
+  pin_memory: True
+  collate_fn:
+    type: BatchImageCollateFunction

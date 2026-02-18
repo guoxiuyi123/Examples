@@ -1,0 +1,39 @@
+backbone:
+  # [from, module, args]
+  - [-1, StemBlock, [16, 16, True]] # 0-P2/4
+  - [-1, HG_Stage, [16, 64, 1, 3, False, False, 3, True, 'se']] # 1-P2/4
+  - [-1, HG_Stage, [32, 256, 1, 3, True, False, 3, True, 'se']] # 2-P3/8
+  - [-1, HG_Stage, [64, 512, 2, 3, True, True, 5, True, 'se']]  # 3-P4/16
+  - [-1, HG_Stage, [128, 1024, 1, 3, True, True, 5, True, 'se']] # 4-P5/32
+
+encoder:
+  - [2, ConvNormLayer_fuse, [256, 1, 1]] # 5-P3/8
+  - [3, ConvNormLayer_fuse, [256, 1, 1]] # 6-P4/16
+  - [4, ConvNormLayer_fuse, [256, 1, 1]] # 7-P5/32
+
+  - [-1, TransformerEncoderBlock, [8, 1024, 0.1, "relu", 10000, False]] # 8-P5/32
+
+  - [[1, 5, 6, 8], SimFusion_4in, []] # 9-P4/16
+  - [-1, IFM, [[64, 32]]] # 10-P4/16
+
+  - [[5, 6, 8], SimFusion_3in, [256]] # 11-P4/16
+  - [[-1, 10], InjectionMultiSum_Auto_pool, [256, [64, 32], 0]] # 12-P4/16
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 13-P4/16
+
+  - [[1, 5, 8], SimFusion_3in, [256]] # 14-P3/8
+  - [[-1, 10], InjectionMultiSum_Auto_pool, [256, [64, 32], 1]] # 15-P3/8
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 16-P3/8
+
+  - [[16, 13, 8], PyramidPoolAgg, [256, 2]] # 17-P6/64
+  - [-1, TopBasicLayer, [[64, 128]]] # 18-P6/64
+
+  - [[16, 6], AdvPoolFusion, []] # 19-P4/16
+  - [[-1, 18], InjectionMultiSum_Auto_pool, [256, [64, 128], 0]] # 20-P4/16
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 21-P4/16
+
+  - [[-1, 8], AdvPoolFusion, []] # 22-P5/32
+  - [[-1, 18], InjectionMultiSum_Auto_pool, [256, [64, 128], 1]] # 23-P5/32
+  - [-1, RepNCSPELAN4, [256, 512, 64, 1, False, 'silu']] # 24-P5/32
+
+decoder:
+  - [[16, 21, 24], DFINETransformer, {"feat_strides":[8, 16, 32], "hidden_dim": 256, "num_levels": 3, "num_layers": 3, "num_points": [3, 6, 3], "dim_feedforward": 1024}]
